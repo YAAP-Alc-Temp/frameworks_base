@@ -17617,6 +17617,12 @@ public final class Settings {
         public static final String HYBRID_SYSUI_BATTERY_WARNING_FLAGS = "hybrid_sysui_battery_warning_flags";
 
         /**
+         * Enable advanced freeform window logic
+         * @hide
+         */
+        public static final String ADVANCED_FREEFORM_WINDOW = "advanced_freeform_window";
+
+        /**
          * Global settings that shouldn't be persisted.
          *
          * @hide

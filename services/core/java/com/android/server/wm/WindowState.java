@@ -5992,6 +5992,15 @@ class WindowState extends WindowContainer<WindowState> implements WindowManagerP
 
     @Override
     public void handleTapOutsideFocusInsideSelf() {
+        if(ActivityTaskManagerService.mEnabledAdvancedFreeformWindow) {
+            // Make sure target task is root task
+            Task targetTask = getTask();
+            if(!targetTask.isRootTask()) {
+                targetTask = targetTask.getRootTask();
+            }
+            // Pass if touched target window type is freeform to DisplayContent
+            getDisplayContent().setTouchingActivityInFreeform(targetTask.inFreeformWindowingMode());
+        }
         mWmService.moveDisplayToTopInternal(getDisplayId());
         mWmService.handleTaskFocusChange(getTask(), mActivityRecord);
     }
