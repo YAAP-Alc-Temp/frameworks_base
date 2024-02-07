@@ -24,6 +24,7 @@ import android.app.ActivityManager.RunningTaskInfo;
 import android.content.Context;
 import android.os.Handler;
 import android.os.IBinder;
+import android.provider.Settings;
 import android.util.SparseArray;
 import android.view.Choreographer;
 import android.view.MotionEvent;
@@ -54,6 +55,7 @@ public class CaptionWindowDecorViewModel implements WindowDecorViewModel {
     private final Choreographer mMainChoreographer;
     private final DisplayController mDisplayController;
     private final SyncTransactionQueue mSyncQueue;
+    private final Transitions mTransitions;
     private TaskOperations mTaskOperations;
 
     private final SparseArray<CaptionWindowDecoration> mWindowDecorByTaskId = new SparseArray<>();
@@ -64,13 +66,15 @@ public class CaptionWindowDecorViewModel implements WindowDecorViewModel {
             Choreographer mainChoreographer,
             ShellTaskOrganizer taskOrganizer,
             DisplayController displayController,
-            SyncTransactionQueue syncQueue) {
+            SyncTransactionQueue syncQueue,
+            Transitions transitions) {
         mContext = context;
         mMainHandler = mainHandler;
         mMainChoreographer = mainChoreographer;
         mTaskOrganizer = taskOrganizer;
         mDisplayController = displayController;
         mSyncQueue = syncQueue;
+        mTransitions = transitions;
         if (!Transitions.ENABLE_SHELL_TRANSITIONS) {
             mTaskOperations = new TaskOperations(null, mContext, mSyncQueue);
         }
@@ -191,9 +195,9 @@ public class CaptionWindowDecorViewModel implements WindowDecorViewModel {
                         mSyncQueue);
         mWindowDecorByTaskId.put(taskInfo.taskId, windowDecoration);
 
-        final DragPositioningCallback dragPositioningCallback =
-                new FluidResizeTaskPositioner(mTaskOrganizer, windowDecoration, mDisplayController,
-                        0 /* disallowedAreaForEndBoundsHeight */);
+        final DragPositioningCallback dragPositioningCallback = createDragPositioningCallback(
+                windowDecoration);
+
         final CaptionTouchEventListener touchEventListener =
                 new CaptionTouchEventListener(taskInfo, dragPositioningCallback);
         windowDecoration.setCaptionListeners(touchEventListener, touchEventListener);
@@ -202,6 +206,28 @@ public class CaptionWindowDecorViewModel implements WindowDecorViewModel {
         windowDecoration.relayout(taskInfo, startT, finishT,
                 false /* applyStartTransactionOnDraw */);
         setupCaptionColor(taskInfo, windowDecoration);
+    }
+
+    private DragPositioningCallback createDragPositioningCallback(
+            CaptionWindowDecoration windowDecoration) {
+        boolean veiledResizeEnabled = Settings.Global.getInt(mContext.getContentResolver(),
+                        Settings.Global.FREEFORM_WINDOW_USE_VEILED_RESIZE, 0) == 1;
+        if (veiledResizeEnabled) {
+            windowDecoration.createResizeVeil();
+            return new VeiledResizeTaskPositioner(
+                    mTaskOrganizer,
+                    windowDecoration,
+                    mDisplayController,
+                    dragStartListener -> {},
+                    mTransitions,
+                    0 /* disallowedAreaForEndBoundsHeight */);
+        } else {
+            return new FluidResizeTaskPositioner(
+                    mTaskOrganizer,
+                    windowDecoration,
+                    mDisplayController,
+                    0 /* disallowedAreaForEndBoundsHeight */);
+        }
     }
 
     private class CaptionTouchEventListener implements

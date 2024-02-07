@@ -17623,6 +17623,12 @@ public final class Settings {
         public static final String ADVANCED_FREEFORM_WINDOW = "advanced_freeform_window";
 
         /**
+         * Whether using veiled resize task positioner for freeform window decor
+         * @hide
+         */
+        public static final String FREEFORM_WINDOW_USE_VEILED_RESIZE = "freeform_use_veiled_resize";
+
+        /**
          * Global settings that shouldn't be persisted.
          *
          * @hide
